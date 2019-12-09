@@ -1,0 +1,18 @@
+{
+  "bucket": "builds-2",
+  "repository": "gcptest",
+  "components": {
+    "spark-app": {
+      "type": "testApp",
+      "assets": [
+        {
+          "glob": "./.gitignore"
+        },
+        {
+          "glob": "./**/*.jar",
+          "zip": true
+        }
+      ]
+    }
+  }
+}
