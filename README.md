@@ -81,7 +81,7 @@ This structure is configured solely through the JSON .mf.json file stored (by de
                   "@binaries": [
                      {
                         "@sha": "777c3a7ed83e44198b0a624976ec99822eb6f4a44bf1513eafbc7c13997cd86c",
-                        "@ref": "gs://builds-bucket/my-bigdata-repo/master/579539e/spark/app.jar"
+                        "@ref": "gs://builds-bucket/my-bigdata-repo/master/579539e/MyComponentABCD/app.jar"
                      }
                   ]
                }
