@@ -25,7 +25,7 @@ class StorageBase:
         bool, Optional[requests.Response]]:
         raise NotImplemented('cas_blob')
 
-    def upload(self, bucket, key, file):
+    def upload(self, bucket, key, file: Path):
         raise NotImplemented('upload')
 
 
@@ -119,7 +119,7 @@ class StorageGCS(StorageBase):
         :return:
         """
         blob: storage.client.Blob = self._storage_client.bucket(bucket).blob(key)
-        blob.upload_from_filename(file)
+        blob.upload_from_filename(filename=str(file))
 
 
 class Manifest(object):
@@ -166,7 +166,7 @@ class Manifest(object):
                 refs_upload_done = True
                 for key, file in assets.items():
                     LOGGER.info("Uploading %s [%s]", file, key)
-                    self._storage.upload(project_obj.bucket, key, file)
+                    self._storage.upload(project_obj.bucket, key, file.absolute())
 
             ok, err_resp = self._storage.cas_blob(data=json.dumps(current_manifest).encode('utf-8'),
                                                   generation=self._version,

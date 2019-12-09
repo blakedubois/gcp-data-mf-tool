@@ -26,9 +26,10 @@ class TestComponentBase(unittest.TestCase):
 
     def test_generate_manifest(self):
 
-        not_url_friendly_brunch_name = 'feature/ABD-111'
+        branch_name = 'dev'
         m = Manifest(bucket='BUCKET', repo_name='ARepo', storage=StorageMock())
-        b = BuildInfo('431refrqewr', not_url_friendly_brunch_name, 'aaaa-bbb-ccc', datetime(2018, 11, 1, 5, 1, 1, 1))
+        b = BuildInfo(git_sha='431refrqewr', git_branch=branch_name,
+                      build_id='aaaa-bbb-ccc', date=datetime(2018, 11, 1, 5, 1, 1, 1))
 
         p = Project({
             'bucket': 'BUCKET',
@@ -38,7 +39,7 @@ class TestComponentBase(unittest.TestCase):
                     'type': 'some',
                     'assets': [
                         {
-                            'glob': 'test_dir/test_file.cfg'
+                            'glob': './**/test_dir/test_file.cfg'
                         }
                     ]
                 }
@@ -46,13 +47,15 @@ class TestComponentBase(unittest.TestCase):
         })
 
         content = m.update(b, p, False)
+
         expected = {
-            '@ns': {'feature-abd-111': {'@last_success': {'@build_id': 'aaaa-bbb-ccc',
+            '@ns': {'dev': {'@last_success': {
+                                                 '@build_id': 'aaaa-bbb-ccc',
                                                  '@built_at': '2018-11-01T05:01:01.000001+00:00',
                                                  '@rev': '431refrqewr',
                                                  '@include': {
                                                      'spark': {'@binaries': [{'@md5': '1B2M2Y8AsgTpgAmY7PhCfg==',
-                                                                              '@ref': 'gs://BUCKET/ARepo/feature-abd-111/431refrqewr/spark/test_file.cfg'}],
+                                                                              '@ref': 'gs://BUCKET/ARepo/dev/431refrqewr/spark/test_file.cfg'}],
                                                                '@metadata': {},
                                                                '@type': 'some'}
                                                  }

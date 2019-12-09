@@ -1,18 +1,16 @@
 {
-  "bucket": "builds-2",
-  "repository": "gcptest",
+  "bucket": "ex_bucket-444",
+  "repository": "SparkApplication",
   "components": {
-    "spark-app": {
-      "type": "testApp",
+
+    "gcp-data": {
+      "type": "python_app",
       "assets": [
         {
-          "glob": "./.gitignore"
-        },
-        {
-          "glob": "./**/*.jar",
-          "zip": true
+          "glob": "./mf/*.py"
         }
       ]
     }
+
   }
 }

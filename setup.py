@@ -42,7 +42,8 @@ setup(
     install_requires=[
         'google-cloud-storage==1.23.0',
         'jsonschema',
-        'python-slugify'
+        'python-slugify',
+        'requests'
     ],
     entry_points={
         "console_scripts": [

@@ -84,15 +84,15 @@ class ZipAsset(AssetBase):
 
     def __init__(self, files: Iterable[Path], **kwargs):
         super().__init__(**kwargs)
-        self._files = files
-        self._tarball = None
+        self._files = list(files)
+        sorted(self._files, key=lambda p: p.name)
 
     @lazy_property
     def __tarball__(self) -> Path:
         with tempfile.NamedTemporaryFile(delete=False, prefix='tarball') as nf:
             with ZipFile(nf, 'w') as zf:
                 # keep the structure of file the same as glob discovered
-                common_root_dir = Path(os.path.commonpath(self._files))
+                common_root_dir = Path(os.path.commonpath([str(x.absolute()) for x in self._files]))
                 for f in self._files:
                     # noinspection PyTypeChecker
                     relative = os.path.relpath(f, start=common_root_dir)

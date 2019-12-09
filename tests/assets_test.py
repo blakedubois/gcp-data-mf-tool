@@ -10,7 +10,7 @@ class TestComponentBase(unittest.TestCase):
         c = ComponentBase('spark-app', {
             'type': 'someType',
             'metadata': {},
-            'assets': [ { 'glob': './test_dir/*.txt' } ]
+            'assets': [ { 'glob': './**/test_dir/*.txt' } ]
         })
 
         assets = list(c.assets)
@@ -20,7 +20,7 @@ class TestComponentBase(unittest.TestCase):
         c = ComponentBase('spark-app', {
             'type': 'someType',
             'metadata': {},
-            'assets': [ { 'glob': './test_dir/**/*.ini' } ]
+            'assets': [ { 'glob': './**/test_dir/**/*.ini' } ]
         })
 
         assets = list(c.assets)
@@ -28,7 +28,7 @@ class TestComponentBase(unittest.TestCase):
 
     def test_assets_props(self):
 
-        dir = Path('.').absolute()
+        dir = Path(__file__).absolute().parent
 
         c = ComponentBase('spark-app', {
             'type': 'someType',
@@ -52,7 +52,7 @@ class TestComponentBase(unittest.TestCase):
         c = ComponentBase('spark-app', {
             'type': 'someType',
             'metadata': {},
-            'assets': [ { 'glob': './test_dir/**/*.ini', 'zip': True } ]
+            'assets': [ { 'glob': './**/test_dir/**/*.ini', 'zip': True } ]
         }, dir)
 
         assets = list(c.assets)
@@ -60,8 +60,8 @@ class TestComponentBase(unittest.TestCase):
 
         asset = assets[0]
 
-        self.assertEqual('ff5e646440ba10fa5140f196684f12b0.zip', asset.filename)
-        self.assertEqual('/15kZEC6EPpRQPGWaE8SsA==', asset.md5)
+        self.assertEqual('eca250db839ef52ec31316c987c439ff.zip', asset.filename)
+        self.assertEqual('7KJQ24Oe9S7DExbJh8Q5/w==', asset.md5)
 
 
 if __name__ == '__main__':
