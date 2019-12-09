@@ -93,7 +93,12 @@ This structure is configured solely through the JSON .mf.json file stored (by de
 
 ## Usage
 
-TBD
+```
+mfutil --git_sha $COMMIT_SHA \
+       --git_branch $BRANCH_NAME \
+       --build_id $BUILD_ID \
+       --upload
+```
 
 
 ## Build
