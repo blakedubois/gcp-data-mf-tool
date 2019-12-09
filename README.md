@@ -56,6 +56,10 @@ This structure is configured solely through the JSON .mf.json file stored (by de
   - glob (type: string) unix pattern, every found file by pattend will be uploaded separatly and added into manifest.json
 
 
+> NOTE:
+> - component's name have to match pattent `^[-a-zA-Z0-9_]*$`
+> - branch name is (slugified)[https://github.com/un33k/python-slugify] to be URL safe.
+
 
 ## Manifest structure
 
