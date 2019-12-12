@@ -97,17 +97,75 @@ This structure is configured solely through the JSON .mf.json file stored (by de
 
 ## Usage
 
+Tool provider next functionality
+
+##### Uploading
+
+It is possible to upload artifacts on GCS as a result of latest succesful build (supposed to be Cloud Build).
+
+>  $BRACH_NAME, $COMMIT_SHA and $BUILD_ID are substitutions. See [https://cloud.google.com/cloud-build/docs/configuring-builds/substitute-variable-values]
+
+
 ```
-mfutil --git_sha $COMMIT_SHA \
-       --git_branch $BRANCH_NAME \
-       --build_id $BUILD_ID \
-       --upload
+mfutil builds latest publish --git_branch $BRACH_NAME --git_commit $COMMIT_SHA --build_id $BUILD_ID
 ```
 
+This command will try to find local .mf.json file to discover GCS bucket and repository name. 
+After that it will find all configured assets and uplaod to GCS
+
+##### Listing
+
+It is possible to take a look latest successful build and its artifacts. Next scenarios are available:
+
+Take a look ALL builds and binaries for interested repository (names provide for example only)
+```
+$ mfutil builds latest ls --bucket my_bucket --repo myrepo
+{"branch": "master", "app": "gcp-data", "built_at": "2019-12-12T12:51:35.541773+00:00", "commit": "432521", "url": "gs://my_bucket/myrepo/master/6dfb5720/gcp-data/manifest.py"}
+{"branch": "dev", "app": "gcp-data", "built_at": "2019-12-12T12:58:35.541773+00:00", "commit": "432521", "url": "gs://my_bucket/myrepo/dev/6dfb5720/gcp-data/manifest.py"}
+
+```
+
+Take a latest build's binaries for interested repository and **specific brunch**
+```
+$ mfutil builds latest ls --bucket my_bucket --repo myrepo --brunch dev
+{"branch": "dev", "app": "gcp-data", "built_at": "2019-12-12T12:58:35.541773+00:00", "commit": "432521", "url": "gs://my_bucket/myrepo/dev/6dfb5720/gcp-data/manifest.py"}
+```
+
+Take a look builds and binaries for interested repository and specific brunch and app, a.k.a. some module
+```
+$ mfutil builds latest ls --bucket my_bucket --repo myrepo --brunch dev --app gcp-data
+{"branch": "dev", "app": "gcp-data", "built_at": "2019-12-12T12:58:35.541773+00:00", "commit": "432521", "url": "gs://my_bucket/myrepo/dev/6dfb5720/gcp-data/manifest.py"}
+```
+
+
+##### Downloading
+
+It is possible to fetch interested binaries from GCS.
+
+Fetch all binaries by last successful build for **specific branch**.
+
+```
+$ mfutil builds latest get --bucket my_bucket --repo myrepo --brunch dev /path/to/store
+```
+
+
+Fetch all binaries by last successful build for specific branch and target app.
+
+```
+$ mfutil builds latest get --bucket my_bucket --repo myrepo --brunch dev --app gcp-data /path/to/store 
+```
 
 ## Build
 
+Just submit cloudbuild or build docker image manually.
 ```
-gcloud builds submit \
---config=./cloudbuild.yaml .
+gcloud builds submit --config=cloudbuild.yaml .
+```
+
+
+## Testing
+
+Just run
+```
+python -m unittest discover -s tests -p '*_test.py'
 ```
