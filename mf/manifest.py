@@ -12,7 +12,7 @@ import warnings
 import requests.auth
 
 from jsonpath_ng import jsonpath, parse
-
+from slugify import slugify
 from google.cloud import storage
 
 from mf.config import Project, BuildInfo
@@ -161,7 +161,11 @@ class Manifest(object):
     def search(self, branch_name=None, app_name=None, **kwargs):
         from jsonpath_ng.jsonpath import Fields, Slice
 
-        if branch_name is None: branch_name = '*'
+        if branch_name is None:
+            branch_name = '*'
+        else:
+            branch_name = slugify(branch_name)
+
         if app_name is None: app_name = '*'
 
         acc = []

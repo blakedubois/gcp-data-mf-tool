@@ -103,7 +103,7 @@ def publish(ctx, git_branch, git_commit, build_id, no_upload):
 @click.option('--app', help='Specific repository\'s application name. Expects that repository can '
                             'have more then one application inside.')
 @click.option('--branch', help='Git branch name')
-@click.option('--include-fields',
+@click.option('-if', '--include-fields',
               help='Include only this fields (comma separated lost). Available: branch,app,commit,url')
 def ls(ctx, bucket, repo, app, branch, include_fields):
     """
