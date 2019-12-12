@@ -1,9 +1,11 @@
+# coding: utf-8
+
 import json
 import unittest
 
 import jsonschema
 
-from mf.config import config
+from mf.config import read_config
 
 
 # noinspection PyTypeChecker
@@ -16,7 +18,7 @@ class TestComponentBase(unittest.TestCase):
             'components': {}
         })
 
-        p = config(root=None, mf_file=data)
+        p = read_config(root=None, mf_file=data)
 
         self.assertEqual(p.bucket, 'a_bucket')
         self.assertEqual(p.repository, 'a_repo')
@@ -35,7 +37,7 @@ class TestComponentBase(unittest.TestCase):
         })
 
         try:
-            config(root=None, mf_file=data)
+            read_config(root=None, mf_file=data)
         except jsonschema.exceptions.ValidationError as r:
             return
 
@@ -55,7 +57,7 @@ class TestComponentBase(unittest.TestCase):
                 }
             })
 
-            p = config(root=None, mf_file=data)
+            p = read_config(root=None, mf_file=data)
 
             self.assertEqual(len(p.components), 1)
 

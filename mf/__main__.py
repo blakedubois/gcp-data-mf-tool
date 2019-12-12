@@ -14,7 +14,7 @@ if __package__ == '':
     path = os.path.dirname(os.path.dirname(__file__))
     sys.path.insert(0, path)
 
-from mf.cli import main as _main  # isort:skip # noqa
+from mf.main import main as _main  # isort:skip # noqa
 
 if __name__ == '__main__':
     sys.exit(_main())

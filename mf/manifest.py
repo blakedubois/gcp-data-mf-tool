@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import copy
 import json
 from pathlib import Path
@@ -6,7 +8,11 @@ from typing import Tuple, Optional, Dict
 import google
 import datetime
 import requests
+import warnings
 import requests.auth
+
+from jsonpath_ng import jsonpath, parse
+
 from google.cloud import storage
 
 from mf.config import Project, BuildInfo
@@ -32,9 +38,13 @@ class StorageBase:
 class StorageGCS(StorageBase):
 
     def __init__(self, bucket, semantic_name):
-        credentials, _ = google.auth.default()
-        self._storage_client = storage.Client(credentials=credentials)
-        self._credentials = credentials
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            credentials, _ = google.auth.default()
+            self._storage_client = storage.Client(credentials=credentials)
+            self._credentials = credentials
+
         self._semantic_name = semantic_name
         self._gs_bucket = self._storage_client.lookup_bucket(bucket)
 
@@ -65,7 +75,8 @@ class StorageGCS(StorageBase):
         str_ = manifest_blob.download_as_string()
         json_ = json.loads(str_)
 
-        LOGGER.info('Fetching manifest gcs blob %s', manifest_blob)
+        LOGGER.debug('Fetching manifest -- gs://%s/%s#%d', manifest_blob.bucket.name, manifest_blob.name,
+                     manifest_blob.generation)
         return manifest_blob.name, manifest_blob.generation, json_
 
     def cas_blob(self, data: bytes, generation: int, bucket_name: str, blob_name: str) -> Tuple[
@@ -142,6 +153,33 @@ class Manifest(object):
         self._original_content = content
         self._version = version
         self._blob_key = blob_name
+
+    @property
+    def content(self):
+        return copy.deepcopy(self._original_content)
+
+    def search(self, branch_name=None, app_name=None, **kwargs):
+        from jsonpath_ng.jsonpath import Fields, Slice
+
+        if branch_name is None: branch_name = '*'
+        if app_name is None: app_name = '*'
+
+        acc = []
+        for branch in parse(f'$.@ns.{branch_name}').find(self._original_content):
+            for build in Fields('@last_success').find(branch.value):
+                for app in Fields(f'@include').child(Fields(app_name)).find(build.value):
+                    acc.extend([
+                        {
+                            'branch': str(branch.path),
+                            'app': str(app.path),
+                            'commit': str(build.value['@rev']),
+                            'url': str(bin['@ref']),
+                        } for bin in app.value.get('@binaries', []) if '@ref' in bin
+                    ])
+
+        sorted(acc, key=lambda d: (d['branch'], d['app']))
+
+        return acc
 
     def update(self, build: BuildInfo, project_obj: Project, upload: bool = True):
         """

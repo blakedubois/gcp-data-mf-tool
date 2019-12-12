@@ -1,8 +1,11 @@
-FROM python:3.6
+FROM python:3.6-slim
 ADD . /app
 
+ENV LC_ALL = en_US.UTF-8
+ENV LOCAL = en_US.UTF-8
+
 RUN cd /app && \
-python setup.py sdist bdist_wheel && \
-python setup.py install
+python setup.py install && \
+rm -rf /app
 
 ENTRYPOINT ["mfutil"]

@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import datetime
 import json
 
@@ -55,31 +57,6 @@ _SCHEMA = {
 }
 
 
-def config(root: Path, mf_file=Optional[Union[Path, bytes, str]]):
-
-    def _load(data):
-        json_ = json.load(data) if hasattr(data, 'read') else json.loads(data)
-        validate(instance=json_, schema=_SCHEMA)
-        assert len(json_) > 0, 'json is an empty object'
-        return json_
-
-    if mf_file is not None and (isinstance(mf_file, bytes) or isinstance(mf_file, str)):
-        return Project(_load(mf_file), root)
-
-    conf_file_path = Path(mf_file) if mf_file else root / DEFAULT_CONFIG_FILE_NAME
-    if not conf_file_path.exists():
-        LOGGER.error("config file not exists [%s]", conf_file_path)
-        raise Exception('config file not exists %s' % conf_file_path)
-
-    LOGGER.info("reading config file [%s]", conf_file_path)
-
-    with open(conf_file_path, 'r') as f:
-        cfg = _load(f)
-        file = Project(cfg, root)
-        LOGGER.info("loaded config: %s", file)
-        return file
-
-
 class Project:
     """
     Project description.
@@ -91,7 +68,7 @@ class Project:
 
     """
 
-    def __init__(self, cfg, root_dir: Path = Path().absolute()):
+    def __init__(self, cfg: dict, root_dir: Path = Path().absolute()):
         self._cfg = cfg
         self._root_dir = root_dir
 
@@ -108,7 +85,32 @@ class Project:
         return self._cfg['repository']
 
     def __repr__(self):
-        return f'Config{self._cfg} '
+        return 'Conf{\n%s\n}' % (',\n'.join(['\t{}={}'.format(a, b) for a, b in self._cfg.items()]))
+
+
+def read_config(root: Path, mf_file: Optional[Union[Path, bytes, str, dict]] = None) -> Optional[Project]:
+
+    def _load_json(data):
+        json_ = json.load(data) if hasattr(data, 'read') else json.loads(data)
+        validate(instance=json_, schema=_SCHEMA)
+        assert len(json_) > 0, 'json is an empty object'
+        return json_
+
+    if mf_file is not None:
+        if isinstance(mf_file, bytes) or isinstance(mf_file, str):
+            return Project(_load_json(mf_file), root)
+        elif isinstance(mf_file, dict):
+            return Project(mf_file, root)
+
+    conf_file_path = Path(mf_file) if mf_file else root / DEFAULT_CONFIG_FILE_NAME
+    if not conf_file_path.exists():
+        LOGGER.warning("config file not exists [%s]", conf_file_path)
+        return None
+
+    with open(conf_file_path, 'r') as f:
+        cfg = _load_json(f)
+        file = Project(cfg, root)
+        return file
 
 
 class BuildInfo(object):
