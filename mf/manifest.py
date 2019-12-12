@@ -46,15 +46,23 @@ class StorageGCS(StorageBase):
             self._credentials = credentials
 
         self._semantic_name = semantic_name
-        self._gs_bucket = self._storage_client.lookup_bucket(bucket)
+        self._gs_bucket: storage.Bucket = self._storage_client.lookup_bucket(bucket)
+
+        if not self._gs_bucket.versioning_enabled:
+            msg = f"Object Versioning for bucket [ {self._gs_bucket.name} ] is not enabled. " \
+                "This can lead to a potential loss of updates while being published by multiple clients. " \
+                "Please enable it for further usage. " \
+                "Simplest way is to run 'gsutil versioning set on gs://bucket' " \
+                "More information - https://cloud.google.com/storage/docs/gsutil/addlhelp/ObjectVersioningandConcurrencyControl"
+            raise RuntimeError(msg)
 
     def fetch_manifest(self) -> Tuple[str, str, dict]:
         """
         Fetch manifest from GS bucket. Remember blob's generation for concurrency control.
         :return:
         """
-
         bucket = self._gs_bucket
+
         key = f'{self._semantic_name}/{MANIFEST_NAME}'
         manifest_blob: storage.bucket.Blob = bucket.get_blob(key)
 
@@ -176,6 +184,7 @@ class Manifest(object):
                         {
                             'branch': str(branch.path),
                             'app': str(app.path),
+                            'built_at': str(build.value['@built_at']),
                             'commit': str(build.value['@rev']),
                             'url': str(bin['@ref']),
                         } for bin in app.value.get('@binaries', []) if '@ref' in bin
@@ -206,9 +215,12 @@ class Manifest(object):
             # Upload assets first and update manifest only after it.
             if not refs_upload_done:
                 refs_upload_done = True
+
                 for key, file in assets.items():
-                    LOGGER.info("Uploading %s [%s]", file, key)
+                    LOGGER.debug("Uploading %s [%s]", file, key)
                     self._storage.upload(project_obj.bucket, key, file.absolute())
+
+                LOGGER.info("Uploading done for %d objects", len(assets))
 
             ok, err_resp = self._storage.cas_blob(data=json.dumps(current_manifest).encode('utf-8'),
                                                   generation=self._version,
@@ -251,7 +263,7 @@ def _merge_new_manifest(original_manifest: dict, build: BuildInfo, mf_file: Proj
         url = f'gs://{mf_file.bucket}/{key}'
         path = asset.path
 
-        LOGGER.info("[%s] discovering asset %s", component_name, path)
+        LOGGER.debug("[%s] discovering asset %s", component_name, path)
         if key not in assets:
             assets[key] = asset.path
 

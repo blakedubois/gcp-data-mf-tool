@@ -141,10 +141,10 @@ class TestComponentBase(unittest.TestCase):
         m = Manifest(bucket='bucket', repo_name='repo', storage=StorageMock(self.SEARCH_DATA))
         found = m.search()
         expected = [
-            {'app': 'spark', 'branch': 'dev', 'commit': '111111',  'url': 'gs://test_file.cfg'},
-            {'app': 'spark', 'branch': 'master', 'commit': '222222',  'url': 'gs://app.jar'},
-            {'app': 'spark', 'branch': 'master', 'commit': '222222',  'url': 'gs://app.cfg'},
-            {'app': 'pyspark', 'branch': 'master', 'commit': '222222',  'url': 'gs://main.py'},
+            {'app': 'spark', 'branch': 'dev', 'commit': '111111', 'built_at': '2018-11-01T05:01:01.000001+00:00', 'url': 'gs://test_file.cfg'},
+            {'app': 'spark', 'branch': 'master', 'commit': '222222', 'built_at': '2019-12-01T05:01:01.000001+00:00', 'url': 'gs://app.jar'},
+            {'app': 'spark', 'branch': 'master', 'commit': '222222', 'built_at': '2019-12-01T05:01:01.000001+00:00', 'url': 'gs://app.cfg'},
+            {'app': 'pyspark', 'branch': 'master', 'commit': '222222', 'built_at': '2019-12-01T05:01:01.000001+00:00', 'url': 'gs://main.py'},
         ]
         self.assertEqual(expected, found)
 
@@ -153,7 +153,7 @@ class TestComponentBase(unittest.TestCase):
         m = Manifest(bucket='bucket', repo_name='repo', storage=StorageMock(self.SEARCH_DATA))
         found = m.search(branch_name='dev')
         expected = [
-            {'app': 'spark', 'branch': 'dev', 'commit': '111111',  'url': 'gs://test_file.cfg'}
+            {'app': 'spark', 'branch': 'dev', 'commit': '111111',  'built_at': '2018-11-01T05:01:01.000001+00:00', 'url': 'gs://test_file.cfg'}
         ]
         self.assertEqual(expected, found)
 
@@ -162,9 +162,9 @@ class TestComponentBase(unittest.TestCase):
         m = Manifest(bucket='bucket', repo_name='repo', storage=StorageMock(self.SEARCH_DATA))
         found = m.search(app_name='spark')
         expected = [
-            {'app': 'spark', 'branch': 'dev', 'commit': '111111',  'url': 'gs://test_file.cfg'},
-            {'app': 'spark', 'branch': 'master', 'commit': '222222',  'url': 'gs://app.jar'},
-            {'app': 'spark', 'branch': 'master', 'commit': '222222', 'url': 'gs://app.cfg'},
+            {'app': 'spark', 'branch': 'dev', 'commit': '111111', 'built_at': '2018-11-01T05:01:01.000001+00:00', 'url': 'gs://test_file.cfg'},
+            {'app': 'spark', 'branch': 'master', 'commit': '222222', 'built_at': '2019-12-01T05:01:01.000001+00:00', 'url': 'gs://app.jar'},
+            {'app': 'spark', 'branch': 'master', 'commit': '222222', 'built_at': '2019-12-01T05:01:01.000001+00:00', 'url': 'gs://app.cfg'},
         ]
         self.assertEqual(expected, found)
 
@@ -173,7 +173,7 @@ class TestComponentBase(unittest.TestCase):
         m = Manifest(bucket='bucket', repo_name='repo', storage=StorageMock(self.SEARCH_DATA))
         found = m.search(app_name='pyspark', branch_name='master')
         expected = [
-            {'app': 'pyspark', 'branch': 'master', 'commit': '222222',  'url': 'gs://main.py'},
+            {'app': 'pyspark', 'branch': 'master', 'commit': '222222', 'built_at': '2019-12-01T05:01:01.000001+00:00',  'url': 'gs://main.py'},
         ]
         self.assertEqual(expected, found)
 

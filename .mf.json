@@ -7,7 +7,7 @@
       "type": "python_app",
       "assets": [
         {
-          "glob": "./mf/*.py"
+          "glob": "./mf/manifest.py"
         }
       ]
     }

@@ -30,6 +30,8 @@ def main():
 @click.pass_context
 def cli(ctx, format, config, debug):
     ctx.ensure_object(dict)
+
+    LOGGER.setLevel(logging.INFO)
     if debug:
         LOGGER.setLevel(logging.DEBUG)
 
@@ -91,7 +93,6 @@ def publish(ctx, git_branch, git_commit, build_id, no_upload):
 
     actual_manifest = Manifest(project.bucket, project.repository)
     new = actual_manifest.update(build_info, project, upload=not no_upload)
-
     if no_upload:
         click.echo(json.dumps(new, indent=4))
 
@@ -161,7 +162,8 @@ def get():
     """
     pass
 
+
 def __current_dir() -> Path:
     cur = Path('.').absolute()
-    LOGGER.info(f'Set current project root dir ({cur})')
+    LOGGER.debug(f'Set current project root dir ({cur})')
     return cur
