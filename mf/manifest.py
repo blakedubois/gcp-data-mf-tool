@@ -14,6 +14,7 @@ import requests.auth
 from jsonpath_ng import jsonpath, parse
 from slugify import slugify
 from google.cloud import storage
+from urllib.parse import urlparse
 
 from mf.config import Project, BuildInfo
 from mf.assets import AssetBase
@@ -34,6 +35,9 @@ class StorageBase:
     def upload(self, bucket, key, file: Path):
         raise NotImplemented('upload')
 
+    def download(self, bucket, key, file):
+        raise NotImplemented('upload')
+
 
 class StorageGCS(StorageBase):
 
@@ -51,8 +55,8 @@ class StorageGCS(StorageBase):
         if not self._gs_bucket.versioning_enabled:
             msg = f"Object Versioning for bucket [ {self._gs_bucket.name} ] is not enabled. " \
                 "This can lead to a potential loss of updates while being published by multiple clients. " \
-                "Please enable it for further usage. " \
-                "Simplest way is to run 'gsutil versioning set on gs://bucket' " \
+                "Please enable it for further usage. \n" \
+                f"Simplest way is to fix it   gsutil versioning set on gs://{self._gs_bucket.name} ` \n" \
                 "More information - https://cloud.google.com/storage/docs/gsutil/addlhelp/ObjectVersioningandConcurrencyControl"
             raise RuntimeError(msg)
 
@@ -140,6 +144,10 @@ class StorageGCS(StorageBase):
         blob: storage.client.Blob = self._storage_client.bucket(bucket).blob(key)
         blob.upload_from_filename(filename=str(file))
 
+    def download(self, bucket, key, file):
+        blob: storage.Blob = self._storage_client.bucket(bucket).blob(key)
+        blob.download_to_filename(str(file))
+
 
 class Manifest(object):
 
@@ -166,7 +174,23 @@ class Manifest(object):
     def content(self):
         return copy.deepcopy(self._original_content)
 
-    def search(self, branch_name=None, app_name=None, **kwargs):
+    def download(self, binary: dict, dest):
+        path = binary['url'].replace('gs://', '')
+
+        path_parts = path.split('/')
+        bucket = path_parts[0]
+        key = "/".join(path_parts[1:])
+        filename = path_parts[len(path_parts) - 1]
+
+        folders = Path(dest) / binary['branch'] / binary['app']
+        if not folders.exists():
+            folders.mkdir(parents=True)
+
+        file = folders / filename
+
+        self._storage.download(bucket, key, file)
+
+    def search(self, branch_name=None, app_name=None):
         from jsonpath_ng.jsonpath import Fields, Slice
 
         if branch_name is None:

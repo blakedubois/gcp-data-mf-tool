@@ -156,10 +156,33 @@ def ls(ctx, bucket, repo, app, branch, include_fields):
 
 
 @latest.command()
-def get():
+@click.pass_context
+@click.option('--bucket', help='Root GCS bucket for all artifacts')
+@click.option('--repo', help='Current repository name, a.k.a. semantic name')
+@click.option('--app', help='Specific repository\'s application name. Expects that repository can '
+                            'have more then one application inside.')
+@click.option('--branch', help='Last build artifacts for branch name', required=True)
+@click.argument('destination', type=click.Path(exists=True, file_okay=False))
+def get(ctx, bucket, repo, app, branch, destination):
     """
     Download all found binaries.
     """
+
+    ctx.ensure_object(dict)
+    project = ctx.obj[PROJECT_OPT]
+
+    if project is None and (bucket is None and repo is None):
+        click.echo(f'Config file not found in [{ctx.obj["root_dir"]}] and --bucket not specifies.\n'
+                   'Please specify --bucket and --repo parameters or --config file path', err=True)
+        return 1
+
+    manifest = Manifest(project.bucket, project.repository)
+    binaries_list = manifest.search(branch_name=branch, app_name=app)
+
+    for bin in binaries_list:
+        manifest.download(bin, dest=destination)
+        LOGGER.debug("Downloading... %s", bin['url'])
+
     pass
 
 
