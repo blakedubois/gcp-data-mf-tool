@@ -6,7 +6,6 @@ import click
 import logging
 import csv
 import sys
-from typing import Optional
 from pathlib import Path
 
 from mf.config import read_config
@@ -51,22 +50,15 @@ def builds():
     pass
 
 
-@builds.group()
-def latest():
-    """
-    Operations with latest CloudBuild builds.
-    """
-    pass
 
-
-@latest.command()
+@builds.command()
 @click.option('--git_branch', required=True, help='Current git branch name')
 @click.option('--git_commit', required=True, help='Current git checksum')
 @click.option('--build_id', required=True, help='Current build id')
 @click.option('-nu', '--no-upload', is_flag=True, default=False,
               help='Should this tool upload artifacts?')
 @click.pass_context
-def publish(ctx, git_branch, git_commit, build_id, no_upload):
+def put(ctx, git_branch, git_commit, build_id, no_upload):
     """
     Scan current folder for .mf.json file that contains description of current repository.
     Based on configuration upload all found binaries into gcs and update manifest.json with information about success build.
@@ -76,6 +68,10 @@ def publish(ctx, git_branch, git_commit, build_id, no_upload):
 
     root_dir = ctx.obj['root_dir']
     project = ctx.obj[PROJECT_OPT]
+
+    assert git_branch and len(str(git_branch)) > 0, '--git_branch have to be non empty string'
+    assert git_commit and len(str(git_commit)) > 0, '--git_commit have to be non empty string'
+    assert build_id and len(str(build_id)) > 0, '--build_id have to be non empty string'
 
     if project is None:
         click.echo(f'config file not found in {root_dir}', err=True)
@@ -97,7 +93,7 @@ def publish(ctx, git_branch, git_commit, build_id, no_upload):
         click.echo(json.dumps(new, indent=4))
 
 
-@latest.command()
+@builds.command()
 @click.pass_context
 @click.option('--bucket', help='Root GCS bucket for all artifacts')
 @click.option('--repo', help='Current repository name, a.k.a. semantic name')
@@ -106,7 +102,7 @@ def publish(ctx, git_branch, git_commit, build_id, no_upload):
 @click.option('--branch', help='Git branch name')
 @click.option('-if', '--include-fields',
               help='Include only this fields (comma separated lost). Available: branch,app,commit,url')
-def ls(ctx, bucket, repo, app, branch, include_fields):
+def list(ctx, bucket, repo, app, branch, include_fields):
     """
     Listing for all latest build binaries (sorted by: branch, app name, time).
 
@@ -127,6 +123,9 @@ def ls(ctx, bucket, repo, app, branch, include_fields):
 
     manifest = Manifest(project.bucket, project.repository)
     binaries_list = manifest.search(branch_name=branch, app_name=app)
+
+    if len(binaries_list) == 0:
+        click.echo('no builds found...')
 
     if include_fields:
         keys = set(str(include_fields).split(','))
@@ -155,7 +154,7 @@ def ls(ctx, bucket, repo, app, branch, include_fields):
             w.writerow(fields_filter(d))
 
 
-@latest.command()
+@builds.command()
 @click.pass_context
 @click.option('--bucket', help='Root GCS bucket for all artifacts')
 @click.option('--repo', help='Current repository name, a.k.a. semantic name')
@@ -181,7 +180,7 @@ def get(ctx, bucket, repo, app, branch, destination):
 
     for bin in binaries_list:
         manifest.download(bin, dest=destination)
-        LOGGER.debug("Downloading... %s", bin['url'])
+        LOGGER.info("Downloading... %s", bin['url'])
 
     pass
 

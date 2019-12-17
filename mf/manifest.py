@@ -52,11 +52,15 @@ class StorageGCS(StorageBase):
         self._semantic_name = semantic_name
         self._gs_bucket: storage.Bucket = self._storage_client.lookup_bucket(bucket)
 
+        if self._gs_bucket is None:
+            LOGGER.error("bucket %s not exists", bucket)
+            raise RuntimeError('not_found')
+
         if not self._gs_bucket.versioning_enabled:
             msg = f"Object Versioning for bucket [ {self._gs_bucket.name} ] is not enabled. " \
                 "This can lead to a potential loss of updates while being published by multiple clients. " \
                 "Please enable it for further usage. \n" \
-                f"Simplest way is to fix it   gsutil versioning set on gs://{self._gs_bucket.name} ` \n" \
+                f"Simplest way is to fix it -- gsutil versioning set on gs://{self._gs_bucket.name} \n" \
                 "More information - https://cloud.google.com/storage/docs/gsutil/addlhelp/ObjectVersioningandConcurrencyControl"
             raise RuntimeError(msg)
 

@@ -7,6 +7,20 @@ about last successful builds and assets, that build generates.
 Overall manifest shows:
 - last successful build for each branch in scopr of repository and all assets produces by a build
 
+## Build
+
+
+For cloud build step this util have to be a docker container. 
+Just submit cloudbuild or build docker image manually.
+```
+$  gcloud builds submit --config=cloudbuild.yaml .
+```
+
+Or install in manually by
+```
+$  python3 setup.py install
+```
+
 ## Configuration file
 
 Configuration file contains static description of the project and produced artifacts for updating the manifest.
@@ -153,13 +167,6 @@ Fetch all binaries by last successful build for specific branch and target app.
 
 ```
 $ mfutil builds latest get --bucket my_bucket --repo myrepo --brunch dev --app gcp-data /path/to/store 
-```
-
-## Build
-
-Just submit cloudbuild or build docker image manually.
-```
-gcloud builds submit --config=cloudbuild.yaml .
 ```
 
 

@@ -97,6 +97,7 @@ def read_config(root: Path, mf_file: Optional[Union[Path, bytes, str, dict]] = N
         return json_
 
     if mf_file is not None:
+
         if isinstance(mf_file, bytes) or isinstance(mf_file, str):
             return Project(_load_json(mf_file), root)
         elif isinstance(mf_file, dict):
