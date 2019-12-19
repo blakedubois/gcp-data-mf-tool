@@ -1,5 +1,5 @@
 {
-  "bucket": "ex_bucket-444",
+  "bucket": "pso-wmt-data_testdata",
   "repository": "SparkApplication",
   "components": {
 
@@ -7,7 +7,7 @@
       "type": "python_app",
       "assets": [
         {
-          "glob": "./mf/*.py"
+          "glob": "./mf/manifest.py"
         }
       ]
     }

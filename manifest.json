@@ -12,7 +12,7 @@
                   "@binaries": [
                      {
                         "@sha": "777c3a7ed83e44198b0a624976ec99822eb6f4a44bf1513eafbc7c13997cd86c",
-                        "@ref": "gs://builds-bucket/my-bigdata-repo/master/579539e/spark/app.jar"
+                        "@ref": "gs://builds-bucket/mt-big-data-project/example-branch/579539ea2763c4be1aebf6133637bd53372ed9ec/MyComponentABCD/app.jar"
                      }
                   ]
                }

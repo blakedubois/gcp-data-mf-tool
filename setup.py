@@ -1,6 +1,7 @@
+# coding: utf-8
+
 import codecs
 import os
-import sys
 
 from setuptools import find_packages, setup
 
@@ -23,7 +24,7 @@ def get_version(rel_path):
         raise RuntimeError("Unable to find version string.")
 
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
@@ -43,11 +44,13 @@ setup(
         'google-cloud-storage==1.23.0',
         'jsonschema',
         'python-slugify',
-        'requests'
+        'requests',
+        'click==7.0',
+        'jsonpath-ng==1.4.3'
     ],
     entry_points={
         "console_scripts": [
-            "mfutil=mf.cli:main"
+            "mfutil=mf.main:main"
         ],
     },
     zip_safe=False,

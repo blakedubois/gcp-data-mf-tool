@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import copy
 import json
 from pathlib import Path
@@ -6,8 +8,13 @@ from typing import Tuple, Optional, Dict
 import google
 import datetime
 import requests
+import warnings
 import requests.auth
+
+from jsonpath_ng import jsonpath, parse
+from slugify import slugify
 from google.cloud import storage
+from urllib.parse import urlparse
 
 from mf.config import Project, BuildInfo
 from mf.assets import AssetBase
@@ -28,23 +35,42 @@ class StorageBase:
     def upload(self, bucket, key, file: Path):
         raise NotImplemented('upload')
 
+    def download(self, bucket, key, file):
+        raise NotImplemented('upload')
+
 
 class StorageGCS(StorageBase):
 
     def __init__(self, bucket, semantic_name):
-        credentials, _ = google.auth.default()
-        self._storage_client = storage.Client(credentials=credentials)
-        self._credentials = credentials
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            credentials, _ = google.auth.default()
+            self._storage_client = storage.Client(credentials=credentials)
+            self._credentials = credentials
+
         self._semantic_name = semantic_name
-        self._gs_bucket = self._storage_client.lookup_bucket(bucket)
+        self._gs_bucket: storage.Bucket = self._storage_client.lookup_bucket(bucket)
+
+        if self._gs_bucket is None:
+            LOGGER.error("bucket %s not exists", bucket)
+            raise RuntimeError('not_found')
+
+        if not self._gs_bucket.versioning_enabled:
+            msg = f"Object Versioning for bucket [ {self._gs_bucket.name} ] is not enabled. " \
+                "This can lead to a potential loss of updates while being published by multiple clients. " \
+                "Please enable it for further usage. \n" \
+                f"Simplest way is to fix it -- gsutil versioning set on gs://{self._gs_bucket.name} \n" \
+                "More information - https://cloud.google.com/storage/docs/gsutil/addlhelp/ObjectVersioningandConcurrencyControl"
+            raise RuntimeError(msg)
 
     def fetch_manifest(self) -> Tuple[str, str, dict]:
         """
         Fetch manifest from GS bucket. Remember blob's generation for concurrency control.
         :return:
         """
-
         bucket = self._gs_bucket
+
         key = f'{self._semantic_name}/{MANIFEST_NAME}'
         manifest_blob: storage.bucket.Blob = bucket.get_blob(key)
 
@@ -65,7 +91,8 @@ class StorageGCS(StorageBase):
         str_ = manifest_blob.download_as_string()
         json_ = json.loads(str_)
 
-        LOGGER.info('Fetching manifest gcs blob %s', manifest_blob)
+        LOGGER.debug('Fetching manifest -- gs://%s/%s#%d', manifest_blob.bucket.name, manifest_blob.name,
+                     manifest_blob.generation)
         return manifest_blob.name, manifest_blob.generation, json_
 
     def cas_blob(self, data: bytes, generation: int, bucket_name: str, blob_name: str) -> Tuple[
@@ -121,6 +148,10 @@ class StorageGCS(StorageBase):
         blob: storage.client.Blob = self._storage_client.bucket(bucket).blob(key)
         blob.upload_from_filename(filename=str(file))
 
+    def download(self, bucket, key, file):
+        blob: storage.Blob = self._storage_client.bucket(bucket).blob(key)
+        blob.download_to_filename(str(file))
+
 
 class Manifest(object):
 
@@ -143,6 +174,54 @@ class Manifest(object):
         self._version = version
         self._blob_key = blob_name
 
+    @property
+    def content(self):
+        return copy.deepcopy(self._original_content)
+
+    def download(self, binary: dict, dest):
+        path = binary['url'].replace('gs://', '')
+
+        path_parts = path.split('/')
+        bucket = path_parts[0]
+        key = "/".join(path_parts[1:])
+        filename = path_parts[len(path_parts) - 1]
+
+        folders = Path(dest) / binary['branch'] / binary['app']
+        if not folders.exists():
+            folders.mkdir(parents=True)
+
+        file = folders / filename
+
+        self._storage.download(bucket, key, file)
+
+    def search(self, branch_name=None, app_name=None):
+        from jsonpath_ng.jsonpath import Fields, Slice
+
+        if branch_name is None:
+            branch_name = '*'
+        else:
+            branch_name = slugify(branch_name)
+
+        if app_name is None: app_name = '*'
+
+        acc = []
+        for branch in parse(f'$.@ns.{branch_name}').find(self._original_content):
+            for build in Fields('@last_success').find(branch.value):
+                for app in Fields(f'@include').child(Fields(app_name)).find(build.value):
+                    acc.extend([
+                        {
+                            'branch': str(branch.path),
+                            'app': str(app.path),
+                            'built_at': str(build.value['@built_at']),
+                            'commit': str(build.value['@rev']),
+                            'url': str(bin['@ref']),
+                        } for bin in app.value.get('@binaries', []) if '@ref' in bin
+                    ])
+
+        sorted(acc, key=lambda d: (d['branch'], d['app']))
+
+        return acc
+
     def update(self, build: BuildInfo, project_obj: Project, upload: bool = True):
         """
         Compare and update blob by generation.
@@ -164,15 +243,20 @@ class Manifest(object):
             # Upload assets first and update manifest only after it.
             if not refs_upload_done:
                 refs_upload_done = True
+
                 for key, file in assets.items():
                     LOGGER.info("Uploading %s [%s]", file, key)
                     self._storage.upload(project_obj.bucket, key, file.absolute())
 
-            ok, err_resp = self._storage.cas_blob(data=json.dumps(current_manifest).encode('utf-8'),
+                LOGGER.info("Uploading done for %d objects", len(assets))
+
+            manifest_json = json.dumps(current_manifest).encode('utf-8')
+            ok, err_resp = self._storage.cas_blob(data=manifest_json,
                                                   generation=self._version,
                                                   bucket_name=self._bucket,
                                                   blob_name=self._blob_key)
             if ok:
+                LOGGER.debug("new updated manifest.json \n%s", manifest_json)
                 return current_manifest
             elif err_resp is None:
                 # TODO any logic to resolve conflict in the content ?
@@ -209,7 +293,7 @@ def _merge_new_manifest(original_manifest: dict, build: BuildInfo, mf_file: Proj
         url = f'gs://{mf_file.bucket}/{key}'
         path = asset.path
 
-        LOGGER.info("[%s] discovering asset %s", component_name, path)
+        LOGGER.debug("[%s] discovering asset %s", component_name, path)
         if key not in assets:
             assets[key] = asset.path
 
