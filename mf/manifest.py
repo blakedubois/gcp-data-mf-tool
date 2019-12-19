@@ -245,16 +245,18 @@ class Manifest(object):
                 refs_upload_done = True
 
                 for key, file in assets.items():
-                    LOGGER.debug("Uploading %s [%s]", file, key)
+                    LOGGER.info("Uploading %s [%s]", file, key)
                     self._storage.upload(project_obj.bucket, key, file.absolute())
 
                 LOGGER.info("Uploading done for %d objects", len(assets))
 
-            ok, err_resp = self._storage.cas_blob(data=json.dumps(current_manifest).encode('utf-8'),
+            manifest_json = json.dumps(current_manifest).encode('utf-8')
+            ok, err_resp = self._storage.cas_blob(data=manifest_json,
                                                   generation=self._version,
                                                   bucket_name=self._bucket,
                                                   blob_name=self._blob_key)
             if ok:
+                LOGGER.debug("new updated manifest.json \n%s", manifest_json)
                 return current_manifest
             elif err_resp is None:
                 # TODO any logic to resolve conflict in the content ?

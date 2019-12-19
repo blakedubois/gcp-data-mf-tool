@@ -141,7 +141,7 @@ $ mfutil builds list --bucket my_bucket --repo myrepo
 
 Take a latest build's binaries for interested repository and **specific brunch**
 ```
-$ mfutil builds latest ls --bucket my_bucket --repo myrepo --brunch dev
+$ mfutil builds list --bucket my_bucket --repo myrepo --brunch dev
 {"branch": "dev", "app": "gcp-data", "built_at": "2019-12-12T12:58:35.541773+00:00", "commit": "432521", "url": "gs://my_bucket/myrepo/dev/6dfb5720/gcp-data/manifest.py"}
 ```
 
